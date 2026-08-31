@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.github
+tests
+Dockerfile
+.dockerignore
+.gitignore
+README.md
+task.md
+walkthrough.md
+implementation_plan.md

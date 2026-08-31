@@ -1,0 +1,25 @@
+{
+  "name": "ci-cd-kube",
+  "version": "1.0.0",
+  "description": "CI/CD automated pipeline with GitHub Actions, Hono app, and Kubernetes deployment placeholders",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.12.2",
+    "hono": "^4.5.11"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.2",
+    "vitest": "^1.6.0"
+  }
+}
