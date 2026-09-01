@@ -102,7 +102,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run Trivy Vulnerability Scanner (DevSecOps)
+      - name: Run Trivy Vulnerability Scanner (DevSecOps) #basically it scanes for vulnerabilities in the docker image
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'ci-cd-kube:local-test'
