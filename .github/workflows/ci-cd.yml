@@ -127,3 +127,32 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
+
+  notify:
+    name: Job 4 - Google Chat Notification
+    runs-on: ubuntu-latest
+    needs: [typecheck, test, build-and-push]
+    if: always()
+
+    steps:
+      - name: Send Google Chat Notification
+        env:
+          WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
+          WORKFLOW_STATUS: ${{ (needs.typecheck.result == 'success' && needs.test.result == 'success' && (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped')) && 'SUCCESS' || 'FAILURE' }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "⚠️ GOOGLE_CHAT_WEBHOOK secret is not set. Skipping Google Chat notification."
+            exit 0
+          fi
+
+          if [ "$WORKFLOW_STATUS" = "SUCCESS" ]; then
+            TITLE="🟢 CI/CD Pipeline Success"
+            TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Successful build and validation.\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          else
+            TITLE="🔴 CI/CD Pipeline Failed"
+            TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Pipeline failed. Check logs for details.\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+
+          curl -H "Content-Type: application/json" \
+            -d "{\"text\": \"$TITLE\n$TEXT\"}" \
+            "$WEBHOOK_URL"
