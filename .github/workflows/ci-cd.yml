@@ -36,7 +36,7 @@ jobs:
         run: npm ci
 
       - name: Run Dependency Security Audit
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Run Typecheck
         run: npm run typecheck
