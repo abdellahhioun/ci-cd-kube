@@ -7,6 +7,7 @@ app.get('/', (c) => c.text('Hello Hono!'))
 
 const port = 3000
 
+/* v8 ignore start */
 if (process.env.NODE_ENV !== 'test') {
   console.log(`Server is running on port ${port}`)
   serve({
@@ -14,3 +15,4 @@ if (process.env.NODE_ENV !== 'test') {
     port
   })
 }
+/* v8 ignore stop */
