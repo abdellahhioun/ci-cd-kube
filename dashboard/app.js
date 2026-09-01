@@ -15,8 +15,6 @@ async function initApp() {
   setupEventListeners();
   await loadBranches();
   await fetchWorkflowRuns();
-  
-  // Auto-refresh runs list every 3 seconds seamlessly
   setInterval(fetchWorkflowRuns, 3000);
 }
 
@@ -82,7 +80,11 @@ function renderDashboard() {
     : allRuns.filter(r => r.head_branch === currentFilter);
 
   updateMetrics(filteredRuns);
-  updatePipelineNodes(filteredRuns.length > 0 ? filteredRuns[0] : null);
+  if (filteredRuns.length > 0) {
+    fetchAndUpdatePipelineNodes(filteredRuns[0]);
+  } else {
+    resetNodes();
+  }
   updateRunsTable(filteredRuns);
 }
 
@@ -96,8 +98,9 @@ function updateMetrics(runs) {
     return;
   }
 
-  const successRuns = runs.filter(r => r.conclusion === 'success').length;
-  const successRate = Math.round((successRuns / total) * 100);
+  const completedRuns = runs.filter(r => r.status === 'completed');
+  const successRuns = completedRuns.filter(r => r.conclusion === 'success').length;
+  const successRate = completedRuns.length > 0 ? Math.round((successRuns / completedRuns.length) * 100) : 100;
   document.getElementById('statSuccessRate').textContent = `${successRate}%`;
 
   const durations = runs
@@ -111,55 +114,67 @@ function updateMetrics(runs) {
   document.getElementById('statAvgDuration').textContent = `${avg}s`;
 }
 
-function updatePipelineNodes(latestRun) {
-  const node1 = document.getElementById('nodeJob1');
-  const node2 = document.getElementById('nodeJob2');
-  const node3 = document.getElementById('nodeJob3');
-  const node4 = document.getElementById('nodeJob4');
-
-  const node1Icon = document.getElementById('node1Icon');
-  const node2Icon = document.getElementById('node2Icon');
-  const node3Icon = document.getElementById('node3Icon');
-  const node4Icon = document.getElementById('node4Icon');
-
+async function fetchAndUpdatePipelineNodes(latestRun) {
   if (!latestRun) {
     resetNodes();
     return;
   }
 
-  const isSuccess = latestRun.conclusion === 'success';
-  const isFailure = latestRun.conclusion === 'failure';
-  const isInProgress = latestRun.status === 'in_progress' || latestRun.status === 'queued';
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs/${latestRun.id}/jobs`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const jobs = data.jobs || [];
 
-  [node1, node2, node3, node4].forEach(n => {
-    n.classList.remove('success', 'failure', 'in_progress');
-  });
+    const job1 = jobs.find(j => j.name.includes('Job 1') || j.name.includes('typecheck'));
+    const job2 = jobs.find(j => j.name.includes('Job 2') || j.name.includes('test'));
+    const job3 = jobs.find(j => j.name.includes('Job 3') || j.name.includes('build-and-push'));
+    const job4 = jobs.find(j => j.name.includes('Job 4') || j.name.includes('notify'));
 
-  if (isSuccess) {
-    [node1, node2, node3, node4].forEach(n => n.classList.add('success'));
-    node1Icon.textContent = '✅';
-    node2Icon.textContent = '✅';
-    node3Icon.textContent = '✅';
-    node4Icon.textContent = '✅';
-  } else if (isFailure) {
-    [node1, node2, node3, node4].forEach(n => n.classList.add('failure'));
-    node1Icon.textContent = '❌';
-    node2Icon.textContent = '❌';
-    node3Icon.textContent = '❌';
-    node4Icon.textContent = '❌';
-  } else if (isInProgress) {
-    node1.classList.add('in_progress');
-    node2.classList.add('in_progress');
-    node1Icon.textContent = '🔄';
-    node2Icon.textContent = '🔄';
-    node3Icon.textContent = '⏳';
-    node4Icon.textContent = '⏳';
+    applyNodeState('nodeJob1', 'node1Icon', job1);
+    applyNodeState('nodeJob2', 'node2Icon', job2);
+    applyNodeState('nodeJob3', 'node3Icon', job3);
+    applyNodeState('nodeJob4', 'node4Icon', job4);
+
+  } catch (err) {
+    console.warn('Could not fetch jobs for latest run:', err);
+  }
+}
+
+function applyNodeState(nodeId, iconId, job) {
+  const node = document.getElementById(nodeId);
+  const icon = document.getElementById(iconId);
+  if (!node || !icon) return;
+
+  node.classList.remove('success', 'failure', 'in_progress', 'queued');
+
+  if (!job) {
+    icon.textContent = '⏳';
+    return;
+  }
+
+  if (job.status === 'completed') {
+    if (job.conclusion === 'success') {
+      node.classList.add('success');
+      icon.textContent = '✅';
+    } else if (job.conclusion === 'failure') {
+      node.classList.add('failure');
+      icon.textContent = '❌';
+    } else {
+      icon.textContent = '⚪';
+    }
+  } else if (job.status === 'in_progress') {
+    node.classList.add('in_progress');
+    icon.textContent = '🔄';
+  } else {
+    node.classList.add('queued');
+    icon.textContent = '⏳';
   }
 }
 
 function resetNodes() {
   ['nodeJob1', 'nodeJob2', 'nodeJob3', 'nodeJob4'].forEach(id => {
-    document.getElementById(id).classList.remove('success', 'failure', 'in_progress');
+    document.getElementById(id).classList.remove('success', 'failure', 'in_progress', 'queued');
   });
   document.getElementById('node1Icon').textContent = '⏳';
   document.getElementById('node2Icon').textContent = '⏳';
@@ -179,12 +194,16 @@ function updateRunsTable(runs) {
   }
 
   tbody.innerHTML = runs.map(r => {
-    const statusClass = r.status === 'in_progress' || r.status === 'queued' ? 'in_progress' : r.conclusion;
-    const statusLabel = r.conclusion === 'success' 
+    const isCompleted = r.status === 'completed';
+    const isSuccess = isCompleted && r.conclusion === 'success';
+    const isFailure = isCompleted && r.conclusion === 'failure';
+    
+    const statusClass = isSuccess ? 'success' : isFailure ? 'failure' : 'in_progress';
+    const statusLabel = isSuccess 
       ? '🟢 SUCCÈS' 
-      : r.conclusion === 'failure' 
+      : isFailure 
       ? '🔴 ÉCHEC' 
-      : '🟡 EN COURS';
+      : '⚡ EN COURS';
     
     const durationSec = r.updated_at && r.run_started_at 
       ? Math.round((new Date(r.updated_at) - new Date(r.run_started_at)) / 1000) 
@@ -260,14 +279,14 @@ async function loadRunJobs(runId) {
     }
 
     container.innerHTML = jobs.map(j => {
-      const isCompleted = j.conclusion === 'success';
-      const isFailed = j.conclusion === 'failure';
+      const isCompleted = j.status === 'completed';
+      const isSuccess = isCompleted && j.conclusion === 'success';
+      const isFailed = isCompleted && j.conclusion === 'failure';
       const isInProgress = j.status === 'in_progress';
-      const isQueued = j.status === 'queued';
 
-      const statusClass = isCompleted ? 'completed' : isFailed ? 'failure' : isInProgress ? 'in_progress' : 'queued';
-      const statusIcon = isCompleted ? '✅' : isFailed ? '❌' : isInProgress ? '🔄' : '⏳';
-      const statusText = isCompleted 
+      const statusClass = isSuccess ? 'completed' : isFailed ? 'failure' : isInProgress ? 'in_progress' : 'queued';
+      const statusIcon = isSuccess ? '✅' : isFailed ? '❌' : isInProgress ? '🔄' : '⏳';
+      const statusText = isSuccess 
         ? 'Terminé avec succès' 
         : isFailed 
         ? 'Échec (Inspectez les logs)' 
