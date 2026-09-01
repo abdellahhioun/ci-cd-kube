@@ -5,7 +5,9 @@ import { serveStatic } from '@hono/node-server/serve-static'
 export const app = new Hono()
 
 app.use('/dashboard/*', serveStatic({ root: './' }))
-app.get('/dashboard', serveStatic({ path: './dashboard/index.html' }))
+app.use('/dashboard', serveStatic({ path: './dashboard/index.html' }))
+app.use('/app.js', serveStatic({ path: './dashboard/app.js' }))
+app.use('/style.css', serveStatic({ path: './dashboard/style.css' }))
 
 app.get('/', (c) => c.text('Hello Hono!'))
 
