@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CI/CD Live Pipeline Dashboard | ci-cd-kube</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="main-header">
+      <div class="brand">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div>
+          <h1>ci-cd-kube <span>Live Pipeline Dashboard</span></h1>
+          <p class="subtitle">Supervision en Temps Réel des Pipelines GitHub Actions & DevSecOps</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="live-badge">
+          <span class="pulse-dot"></span>
+          <span class="live-text">DIRECT LIVE</span>
+        </div>
+        <button id="refreshBtn" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-spin">
+            <path d="M23 4v6h-6M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+          </svg>
+          Actualiser
+        </button>
+      </div>
+    </header>
+
+    <!-- Branch Selector & Filter -->
+    <section class="controls-section">
+      <div class="filter-group">
+        <label for="branchSelect">Branche Git :</label>
+        <select id="branchSelect" class="custom-select">
+          <option value="all">🌐 Toutes les branches</option>
+          <option value="main">⭐ main (Production)</option>
+          <option value="develop" selected>🚀 develop (Intégration)</option>
+        </select>
+      </div>
+
+      <div class="repo-info">
+        <span class="repo-tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/>
+          </svg>
+          abdellahhioun/ci-cd-kube
+        </span>
+      </div>
+    </section>
+
+    <!-- Key Metrics Stats Cards -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-icon cyan">🚀</div>
+        <div class="metric-data">
+          <span class="metric-label">Total Exécutions</span>
+          <span id="statTotalRuns" class="metric-value">--</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon emerald">🟢</div>
+        <div class="metric-data">
+          <span class="metric-label">Taux de Succès</span>
+          <span id="statSuccessRate" class="metric-value">--%</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon purple">⏱️</div>
+        <div class="metric-data">
+          <span class="metric-label">Durée Moyenne</span>
+          <span id="statAvgDuration" class="metric-value">--s</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon amber">🛡️</div>
+        <div class="metric-data">
+          <span class="metric-label">Statut DevSecOps</span>
+          <span id="statSecurityStatus" class="metric-value">0 Faille</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visual Interactive Pipeline Node Graph -->
+    <section class="pipeline-graph-container">
+      <div class="section-header">
+        <h2>Architecture & Flux des Jobs de la Pipeline</h2>
+        <span class="badge">Pipeline CI/CD DevSecOps</span>
+      </div>
+
+      <div class="nodes-flow">
+        <div class="node-card" id="nodeJob1">
+          <div class="node-header">
+            <span class="node-step">01</span>
+            <span class="node-status-icon" id="node1Icon">⏳</span>
+          </div>
+          <h3>Code Quality</h3>
+          <p>Typecheck TS & npm audit</p>
+          <div class="node-meta">
+            <span class="tag">tsc --noEmit</span>
+            <span class="tag">npm audit</span>
+          </div>
+        </div>
+
+        <div class="connector-line"><div class="laser"></div></div>
+
+        <div class="node-card" id="nodeJob2">
+          <div class="node-header">
+            <span class="node-step">02</span>
+            <span class="node-status-icon" id="node2Icon">⏳</span>
+          </div>
+          <h3>Unit Tests</h3>
+          <p>Vitest & Couverture (100%)</p>
+          <div class="node-meta">
+            <span class="tag">Vitest</span>
+            <span class="tag">Coverage 80%+</span>
+          </div>
+        </div>
+
+        <div class="connector-line"><div class="laser"></div></div>
+
+        <div class="node-card" id="nodeJob3">
+          <div class="node-header">
+            <span class="node-step">03</span>
+            <span class="node-status-icon" id="node3Icon">⏳</span>
+          </div>
+          <h3>Build & DevSecOps</h3>
+          <p>Trivy Scan & Push GHCR</p>
+          <div class="node-meta">
+            <span class="tag">Trivy</span>
+            <span class="tag">GHCR</span>
+          </div>
+        </div>
+
+        <div class="connector-line"><div class="laser"></div></div>
+
+        <div class="node-card" id="nodeJob4">
+          <div class="node-header">
+            <span class="node-step">04</span>
+            <span class="node-status-icon" id="node4Icon">⏳</span>
+          </div>
+          <h3>Notifications</h3>
+          <p>Google Chat Webhook</p>
+          <div class="node-meta">
+            <span class="tag">Google Chat</span>
+            <span class="tag">Webhook</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Workflow Runs List -->
+    <section class="runs-section">
+      <div class="section-header">
+        <h2>Dernières Exécutions de la Pipeline</h2>
+      </div>
+
+      <div class="runs-list-container">
+        <table class="runs-table">
+          <thead>
+            <tr>
+              <th>Statut</th>
+              <th>Commit / Message</th>
+              <th>Branche</th>
+              <th>Auteur</th>
+              <th>Déclencheur</th>
+              <th>Durée</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="runsTableBody">
+            <tr>
+              <td colspan="7" class="loading-cell">Chargement des données GitHub Actions...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

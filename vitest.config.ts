@@ -5,6 +5,8 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
+      include: ['src/**/*.ts'],
+      exclude: ['dashboard/**', 'node_modules/**', 'tests/**'],
       thresholds: {
         lines: 80,
         functions: 80,
