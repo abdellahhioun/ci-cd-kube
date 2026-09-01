@@ -4,6 +4,8 @@ const BRANCHES_URL = `https://api.github.com/repos/${REPO}/branches`;
 
 let allRuns = [];
 let currentFilter = 'develop';
+let activeRunId = null;
+let modalPollInterval = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
@@ -14,13 +16,15 @@ async function initApp() {
   await loadBranches();
   await fetchWorkflowRuns();
   
-  // Auto-refresh every 6 seconds
-  setInterval(fetchWorkflowRuns, 6000);
+  // Auto-refresh runs list every 3 seconds seamlessly
+  setInterval(fetchWorkflowRuns, 3000);
 }
 
 function setupEventListeners() {
   const branchSelect = document.getElementById('branchSelect');
   const refreshBtn = document.getElementById('refreshBtn');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const jobModal = document.getElementById('jobModal');
 
   branchSelect.addEventListener('change', (e) => {
     currentFilter = e.target.value;
@@ -32,6 +36,11 @@ function setupEventListeners() {
     await fetchWorkflowRuns();
     refreshBtn.disabled = false;
   });
+
+  closeModalBtn.addEventListener('click', closeModal);
+  jobModal.addEventListener('click', (e) => {
+    if (e.target === jobModal) closeModal();
+  });
 }
 
 async function loadBranches() {
@@ -41,10 +50,7 @@ async function loadBranches() {
     const branches = await res.json();
     const branchSelect = document.getElementById('branchSelect');
     
-    // Save current selection
     const selectedVal = branchSelect.value;
-    
-    // Populate dropdown with all available branches
     branchSelect.innerHTML = '<option value="all">🌐 Toutes les branches</option>';
     branches.forEach(b => {
       const opt = document.createElement('option');
@@ -67,13 +73,6 @@ async function fetchWorkflowRuns() {
     renderDashboard();
   } catch (err) {
     console.error('Error fetching workflow runs:', err);
-    document.getElementById('runsTableBody').innerHTML = `
-      <tr>
-        <td colspan="7" class="loading-cell" style="color: var(--accent-rose)">
-          ⚠️ Impossible de charger les données GitHub API (${err.message})
-        </td>
-      </tr>
-    `;
   }
 }
 
@@ -101,7 +100,6 @@ function updateMetrics(runs) {
   const successRate = Math.round((successRuns / total) * 100);
   document.getElementById('statSuccessRate').textContent = `${successRate}%`;
 
-  // Duration computation
   const durations = runs
     .filter(r => r.updated_at && r.run_started_at)
     .map(r => (new Date(r.updated_at) - new Date(r.run_started_at)) / 1000);
@@ -135,21 +133,23 @@ function updatePipelineNodes(latestRun) {
 
   [node1, node2, node3, node4].forEach(n => {
     n.classList.remove('success', 'failure', 'in_progress');
-    if (isSuccess) n.classList.add('success');
-    if (isFailure) n.classList.add('failure');
   });
 
   if (isSuccess) {
+    [node1, node2, node3, node4].forEach(n => n.classList.add('success'));
     node1Icon.textContent = '✅';
     node2Icon.textContent = '✅';
     node3Icon.textContent = '✅';
     node4Icon.textContent = '✅';
   } else if (isFailure) {
+    [node1, node2, node3, node4].forEach(n => n.classList.add('failure'));
     node1Icon.textContent = '❌';
     node2Icon.textContent = '❌';
     node3Icon.textContent = '❌';
     node4Icon.textContent = '❌';
   } else if (isInProgress) {
+    node1.classList.add('in_progress');
+    node2.classList.add('in_progress');
     node1Icon.textContent = '🔄';
     node2Icon.textContent = '🔄';
     node3Icon.textContent = '⏳';
@@ -179,14 +179,19 @@ function updateRunsTable(runs) {
   }
 
   tbody.innerHTML = runs.map(r => {
-    const statusClass = r.conclusion || r.status;
-    const statusLabel = r.conclusion === 'success' ? '🟢 SUCCÈS' : r.conclusion === 'failure' ? '🔴 ÉCHEC' : '🟡 EN COURS';
+    const statusClass = r.status === 'in_progress' || r.status === 'queued' ? 'in_progress' : r.conclusion;
+    const statusLabel = r.conclusion === 'success' 
+      ? '🟢 SUCCÈS' 
+      : r.conclusion === 'failure' 
+      ? '🔴 ÉCHEC' 
+      : '🟡 EN COURS';
+    
     const durationSec = r.updated_at && r.run_started_at 
       ? Math.round((new Date(r.updated_at) - new Date(r.run_started_at)) / 1000) 
       : 0;
 
     return `
-      <tr>
+      <tr onclick="openRunDetailsModal(${r.id})">
         <td>
           <span class="status-pill ${statusClass}">
             ${statusLabel}
@@ -202,11 +207,95 @@ function updateRunsTable(runs) {
         <td>${r.event}</td>
         <td>${durationSec}s</td>
         <td>
-          <a href="${r.html_url}" target="_blank" rel="noopener" class="action-link">
-            Voir Logs ↗
-          </a>
+          <span class="action-link">
+            Inspecter Jobs ➔
+          </span>
         </td>
       </tr>
     `;
   }).join('');
+}
+
+async function openRunDetailsModal(runId) {
+  activeRunId = runId;
+  const modal = document.getElementById('jobModal');
+  modal.classList.remove('hidden');
+
+  const run = allRuns.find(r => r.id === runId);
+  if (run) {
+    document.getElementById('modalTitle').textContent = `Workflow Run #${run.run_number}`;
+    document.getElementById('modalRunSummary').innerHTML = `
+      <div><strong>Branche :</strong> <span class="branch-badge">${run.head_branch}</span></div>
+      <div><strong>Commit :</strong> ${run.head_commit?.message || 'Push commit'} (<code>${run.head_sha.substring(0, 7)}</code>)</div>
+      <div><strong>Auteur :</strong> ${run.triggering_actor?.login || 'Developer'}</div>
+    `;
+    document.getElementById('modalGitHubLink').href = run.html_url;
+  }
+
+  await loadRunJobs(runId);
+
+  if (modalPollInterval) clearInterval(modalPollInterval);
+  modalPollInterval = setInterval(() => {
+    if (activeRunId === runId) loadRunJobs(runId);
+  }, 3000);
+}
+
+function closeModal() {
+  document.getElementById('jobModal').classList.add('hidden');
+  activeRunId = null;
+  if (modalPollInterval) clearInterval(modalPollInterval);
+}
+
+async function loadRunJobs(runId) {
+  const container = document.getElementById('modalJobsList');
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs/${runId}/jobs`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const jobs = data.jobs || [];
+
+    if (jobs.length === 0) {
+      container.innerHTML = `<div class="loading-cell">Aucun job trouvé ou en attente d'initialisation...</div>`;
+      return;
+    }
+
+    container.innerHTML = jobs.map(j => {
+      const isCompleted = j.conclusion === 'success';
+      const isFailed = j.conclusion === 'failure';
+      const isInProgress = j.status === 'in_progress';
+      const isQueued = j.status === 'queued';
+
+      const statusClass = isCompleted ? 'completed' : isFailed ? 'failure' : isInProgress ? 'in_progress' : 'queued';
+      const statusIcon = isCompleted ? '✅' : isFailed ? '❌' : isInProgress ? '🔄' : '⏳';
+      const statusText = isCompleted 
+        ? 'Terminé avec succès' 
+        : isFailed 
+        ? 'Échec (Inspectez les logs)' 
+        : isInProgress 
+        ? 'En cours d\'exécution...' 
+        : 'En attente dans la file';
+
+      const duration = j.completed_at && j.started_at 
+        ? `${Math.round((new Date(j.completed_at) - new Date(j.started_at)) / 1000)}s` 
+        : isInProgress 
+        ? 'En cours...' 
+        : '-';
+
+      return `
+        <div class="job-step-card ${statusClass}">
+          <div class="job-info">
+            <span class="job-step-icon">${statusIcon}</span>
+            <div>
+              <div class="job-name">${j.name}</div>
+              <div class="job-subtext">${statusText}</div>
+            </div>
+          </div>
+          <div class="job-time">${duration}</div>
+        </div>
+      `;
+    }).join('');
+
+  } catch (err) {
+    container.innerHTML = `<div class="loading-cell" style="color: var(--accent-rose)">⚠️ Erreur lors du chargement des jobs (${err.message})</div>`;
+  }
 }
