@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment       #so here we declare for what purpose we are using this file
+metadata:
+  name: ci-cd-kube-deployment    #here we give it a name
+  labels:
+    app: ci-cd-kube     #here we label it
+spec:
+  replicas: 2        #here we decide how many replicas we want to run in the pod
+  selector:
+    matchLabels:       #here we tell the deployment for what label it should look for
+      app: ci-cd-kube
+  template:
+    metadata:
+      labels:
+        app: ci-cd-kube
+    spec:
+      containers:
+        - name: ci-cd-kube
+          image: ghcr.io/abdellahhioun/ci-cd-kube:dev  #here we select which image to deploy
+          imagePullPolicy: Always     #and here we decide when to pull the image
+          ports:                      #----------------------
+            - containerPort: 3000       #here we select our port for our server
+          resources:            #these are the general and best most used resources
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:                  #test de santé pour Kubernetes (redémarre le conteneur si planté)
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:                 #vérifie si l'application est prête à recevoir du trafic
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 3
+            periodSeconds: 5

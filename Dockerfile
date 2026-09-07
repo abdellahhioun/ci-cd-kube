@@ -21,6 +21,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=deps --chown=hono:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=hono:nodejs /app/dist ./dist
 COPY --from=builder --chown=hono:nodejs /app/package.json ./package.json
+COPY --chown=hono:nodejs dashboard ./dashboard
 
 USER hono
 EXPOSE 3000

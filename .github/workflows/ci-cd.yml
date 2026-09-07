@@ -151,17 +151,47 @@ jobs:
           echo "docker pull ghcr.io/${{ github.repository }}:dev" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
+  deploy:
+    name: Job 5 - Continuous Deployment to Kubernetes
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Kubernetes Context
+        uses: azure/k8s-set-context@v4
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG_DATA }}
+
+      - name: Deploy to Kubernetes Cluster
+        run: |
+          kubectl apply -f k8s/
+          kubectl rollout restart deployment/ci-cd-kube-deployment
+          kubectl rollout status deployment/ci-cd-kube-deployment --timeout=90s
+
+      - name: Generate Kubernetes Deployment Step Summary
+        run: |
+          echo "## ☸️ Kubernetes Continuous Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployment Metric | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :---: | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 Cluster Deployment | ✅ SUCCESSFUL | Applied \`k8s/\` manifests |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔄 Rollout Status | 🟢 HEALTHY | Zero-Downtime Pod Update |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🌐 Public IP Endpoint | 🌐 ONLINE | \`http://138.201.184.143\` |" >> $GITHUB_STEP_SUMMARY
+
   notify:
     name: Job 4 - Google Chat Notification
     runs-on: ubuntu-latest
-    needs: [typecheck, test, build-and-push]
+    needs: [typecheck, test, build-and-push, deploy]
     if: always()
 
     steps:
       - name: Send Google Chat Notification
         env:
           WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
-          WORKFLOW_STATUS: ${{ (needs.typecheck.result == 'success' && needs.test.result == 'success' && (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped')) && 'SUCCESS' || 'FAILURE' }}
+          WORKFLOW_STATUS: ${{ (needs.typecheck.result == 'success' && needs.test.result == 'success' && (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped') && (needs.deploy.result == 'success' || needs.deploy.result == 'skipped')) && 'SUCCESS' || 'FAILURE' }}
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
             echo "⚠️ GOOGLE_CHAT_WEBHOOK secret is not set. Skipping Google Chat notification."
@@ -169,8 +199,8 @@ jobs:
           fi
 
           if [ "$WORKFLOW_STATUS" = "SUCCESS" ]; then
-            TITLE="🟢 CI/CD Pipeline Success"
-            TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Successful build and validation.\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            TITLE="🟢 CI/CD Pipeline & K8s Deployment Success"
+            TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Successful build, validation & K8s Deployment.\n*Live URL:* http://138.201.184.143\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           else
             TITLE="🔴 CI/CD Pipeline Failed"
             TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Pipeline failed. Check logs for details.\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
