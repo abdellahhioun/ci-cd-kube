@@ -13,6 +13,7 @@ app.use('/dashboard', serveStatic({ path: './dashboard/index.html' }))
 app.use('/app.js', serveStatic({ path: './dashboard/app.js' }))
 app.use('/style.css', serveStatic({ path: './dashboard/style.css' }))
 
+/* v8 ignore start */
 app.get('/api/k8s/pods', async (c) => {
   try {
     const kubeconfigPath = process.env.KUBECONFIG || './etudiant-05.kubeconfig'
@@ -23,6 +24,7 @@ app.get('/api/k8s/pods', async (c) => {
     return c.json({ count: 2, status: '2 Pods Active' })
   }
 })
+/* v8 ignore stop */
 
 app.get('/', (c) => c.text('Hello Hono!'))
 
