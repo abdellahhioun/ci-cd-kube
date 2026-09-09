@@ -15,7 +15,13 @@ async function initApp() {
   setupEventListeners();
   await loadBranches();
   await fetchWorkflowRuns();
-  setInterval(fetchWorkflowRuns, 3000);
+  await fetchK8sPodCount();
+  
+  // Auto-refresh runs list and K8s pod count every 3 seconds seamlessly
+  setInterval(async () => {
+    await fetchWorkflowRuns();
+    await fetchK8sPodCount();
+  }, 3000);
 }
 
 function setupEventListeners() {
@@ -32,6 +38,7 @@ function setupEventListeners() {
   refreshBtn.addEventListener('click', async () => {
     refreshBtn.disabled = true;
     await fetchWorkflowRuns();
+    await fetchK8sPodCount();
     refreshBtn.disabled = false;
   });
 
@@ -71,6 +78,19 @@ async function fetchWorkflowRuns() {
     renderDashboard();
   } catch (err) {
     console.error('Error fetching workflow runs:', err);
+  }
+}
+
+async function fetchK8sPodCount() {
+  try {
+    const res = await fetch('/api/k8s/pods');
+    if (res.ok) {
+      const data = await res.json();
+      const el = document.getElementById('statSecurityStatus');
+      if (el) el.textContent = `${data.count} Pods Active`;
+    }
+  } catch (err) {
+    console.warn('Could not fetch K8s pod count:', err);
   }
 }
 
