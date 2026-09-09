@@ -11,8 +11,19 @@ spec:
   tls:
     - hosts:
         - 138.201.184.143.sslip.io
+        - etudiant-05.development.atelier.ovh
       secretName: ci-cd-kube-tls
   rules:
+    - host: etudiant-05.development.atelier.ovh
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ci-cd-kube-service
+                port:
+                  number: 80
     - host: 138.201.184.143.sslip.io
       http:
         paths:
@@ -32,4 +43,5 @@ spec:
                 name: ci-cd-kube-service
                 port:
                   number: 80
+
 
