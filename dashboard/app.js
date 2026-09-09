@@ -129,12 +129,16 @@ async function fetchAndUpdatePipelineNodes(latestRun) {
     const job1 = jobs.find(j => j.name.includes('Job 1') || j.name.includes('typecheck'));
     const job2 = jobs.find(j => j.name.includes('Job 2') || j.name.includes('test'));
     const job3 = jobs.find(j => j.name.includes('Job 3') || j.name.includes('build-and-push'));
-    const job4 = jobs.find(j => j.name.includes('Job 4') || j.name.includes('notify'));
+    const job4 = jobs.find(j => j.name.includes('Job 4') || j.name.includes('deploy'));
+    const job5 = jobs.find(j => j.name.includes('Job 5') || j.name.includes('e2e'));
+    const job6 = jobs.find(j => j.name.includes('Job 6') || j.name.includes('notify'));
 
     applyNodeState('nodeJob1', 'node1Icon', job1);
     applyNodeState('nodeJob2', 'node2Icon', job2);
     applyNodeState('nodeJob3', 'node3Icon', job3);
     applyNodeState('nodeJob4', 'node4Icon', job4);
+    applyNodeState('nodeJob5', 'node5Icon', job5);
+    applyNodeState('nodeJob6', 'node6Icon', job6);
 
   } catch (err) {
     console.warn('Could not fetch jobs for latest run:', err);
@@ -173,13 +177,14 @@ function applyNodeState(nodeId, iconId, job) {
 }
 
 function resetNodes() {
-  ['nodeJob1', 'nodeJob2', 'nodeJob3', 'nodeJob4'].forEach(id => {
-    document.getElementById(id).classList.remove('success', 'failure', 'in_progress', 'queued');
+  ['nodeJob1', 'nodeJob2', 'nodeJob3', 'nodeJob4', 'nodeJob5', 'nodeJob6'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('success', 'failure', 'in_progress', 'queued');
   });
-  document.getElementById('node1Icon').textContent = '⏳';
-  document.getElementById('node2Icon').textContent = '⏳';
-  document.getElementById('node3Icon').textContent = '⏳';
-  document.getElementById('node4Icon').textContent = '⏳';
+  ['node1Icon', 'node2Icon', 'node3Icon', 'node4Icon', 'node5Icon', 'node6Icon'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '⏳';
+  });
 }
 
 function updateRunsTable(runs) {
@@ -227,7 +232,7 @@ function updateRunsTable(runs) {
         <td>${durationSec}s</td>
         <td>
           <span class="action-link">
-            Inspecter Jobs ➔
+            Inspecter 6 Jobs ➔
           </span>
         </td>
       </tr>

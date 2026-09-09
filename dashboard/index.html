@@ -9,22 +9,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-primary: #090d16;
-      --bg-secondary: #111827;
-      --bg-card: rgba(17, 24, 39, 0.85);
-      --border-color: rgba(255, 255, 255, 0.12);
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
+      /* Claude.ai Warm Studio Palette */
+      --bg-primary: #171614;
+      --bg-card: rgba(30, 29, 26, 0.92);
+      --bg-card-hover: rgba(38, 36, 33, 0.95);
+      --border-color: rgba(235, 230, 220, 0.1);
+      --border-color-strong: rgba(235, 230, 220, 0.18);
       
-      --accent-cyan: #06b6d4;
-      --accent-emerald: #10b981;
-      --accent-purple: #8b5cf6;
-      --accent-amber: #f59e0b;
-      --accent-rose: #f43f5e;
+      --text-main: #ece8e1;
+      --text-muted: #9e9a90;
       
-      --shadow-glow-cyan: 0 0 20px rgba(6, 182, 212, 0.35);
-      --shadow-glow-emerald: 0 0 20px rgba(16, 185, 129, 0.35);
-      --shadow-glow-rose: 0 0 20px rgba(244, 63, 94, 0.35);
+      /* Claude signature accents */
+      --claude-orange: #da7756;
+      --claude-orange-glow: rgba(218, 119, 86, 0.25);
+      --accent-emerald: #34d399;
+      --accent-purple: #a78bfa;
+      --accent-amber: #fbbf24;
+      --accent-rose: #f87171;
     }
 
     * {
@@ -34,19 +35,19 @@
     }
 
     body {
-      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: var(--bg-primary);
       color: var(--text-main);
       min-height: 100vh;
       padding: 2rem;
       background-image: 
-        radial-gradient(at 10% 10%, rgba(6, 182, 212, 0.15) 0px, transparent 50%),
-        radial-gradient(at 90% 90%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+        radial-gradient(at 15% 15%, rgba(218, 119, 86, 0.08) 0px, transparent 55%),
+        radial-gradient(at 85% 85%, rgba(167, 139, 250, 0.06) 0px, transparent 55%);
       background-attachment: fixed;
     }
 
     .app-container {
-      max-width: 1300px;
+      max-width: 1400px;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
@@ -63,8 +64,8 @@
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-color);
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     }
 
     .brand {
@@ -76,17 +77,17 @@
     .logo-icon {
       width: 48px;
       height: 48px;
-      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-      border-radius: 12px;
+      background: linear-gradient(135deg, var(--claude-orange), #b85b3b);
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: var(--shadow-glow-cyan);
+      box-shadow: 0 0 25px var(--claude-orange-glow);
     }
 
     .logo-icon svg {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       color: white;
     }
 
@@ -97,8 +98,8 @@
     }
 
     .brand h1 span {
-      color: var(--accent-cyan);
-      font-weight: 400;
+      color: var(--claude-orange);
+      font-weight: 500;
     }
 
     .subtitle {
@@ -117,17 +118,17 @@
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 1rem;
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      background: rgba(52, 211, 153, 0.12);
+      border: 1px solid rgba(52, 211, 153, 0.25);
       border-radius: 9999px;
     }
 
     .pulse-dot {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       background-color: var(--accent-emerald);
       border-radius: 50%;
-      box-shadow: 0 0 10px var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
     }
 
     .live-text {
@@ -139,7 +140,7 @@
 
     .btn {
       padding: 0.6rem 1.2rem;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 0.875rem;
       font-weight: 600;
       cursor: pointer;
@@ -152,13 +153,13 @@
     }
 
     .btn-secondary {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.06);
       color: var(--text-main);
     }
 
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--border-color-strong);
     }
 
     .icon-spin {
@@ -171,12 +172,12 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem 1.5rem;
+      padding: 1.2rem 1.8rem;
       background: var(--bg-card);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-color);
-      border-radius: 12px;
+      border-radius: 16px;
     }
 
     .filter-group {
@@ -193,10 +194,10 @@
 
     .custom-select {
       padding: 0.5rem 1rem;
-      background: #1f2937;
+      background: #252420;
       color: var(--text-main);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 0.9rem;
       outline: none;
       cursor: pointer;
@@ -208,11 +209,11 @@
       gap: 0.5rem;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.85rem;
-      color: var(--accent-cyan);
-      background: rgba(6, 182, 212, 0.15);
+      color: var(--claude-orange);
+      background: rgba(218, 119, 86, 0.12);
       padding: 0.4rem 0.8rem;
-      border-radius: 8px;
-      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 10px;
+      border: 1px solid rgba(218, 119, 86, 0.25);
     }
 
     .repo-tag svg {
@@ -232,7 +233,7 @@
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-color);
-      border-radius: 16px;
+      border-radius: 18px;
       padding: 1.5rem;
       display: flex;
       align-items: center;
@@ -241,8 +242,8 @@
     }
 
     .metric-card:hover {
-      transform: translateY(-3px);
-      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+      border-color: var(--border-color-strong);
     }
 
     .metric-icon {
@@ -253,7 +254,7 @@
       align-items: center;
       justify-content: center;
       font-size: 1.5rem;
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .metric-data {
@@ -262,7 +263,7 @@
     }
 
     .metric-label {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -280,7 +281,7 @@
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-color);
-      border-radius: 16px;
+      border-radius: 20px;
       padding: 2rem;
       display: flex;
       flex-direction: column;
@@ -302,9 +303,9 @@
       font-size: 0.75rem;
       font-weight: 600;
       padding: 0.3rem 0.8rem;
-      background: rgba(139, 92, 246, 0.15);
-      color: var(--accent-purple);
-      border: 1px solid rgba(139, 92, 246, 0.3);
+      background: rgba(218, 119, 86, 0.12);
+      color: var(--claude-orange);
+      border: 1px solid rgba(218, 119, 86, 0.3);
       border-radius: 9999px;
     }
 
@@ -312,38 +313,38 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
+      gap: 0.8rem;
       overflow-x: auto;
-      padding: 1rem 0;
+      padding: 0.5rem 0;
     }
 
     .node-card {
       flex: 1;
-      min-width: 220px;
-      background: rgba(31, 41, 55, 0.8);
+      min-width: 190px;
+      background: rgba(42, 40, 36, 0.7);
       border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 1.2rem;
+      border-radius: 16px;
+      padding: 1.1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
-      transition: all 0.3s ease;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
       position: relative;
     }
 
     .node-card.success {
       border-color: var(--accent-emerald);
-      box-shadow: var(--shadow-glow-emerald);
+      box-shadow: 0 0 15px rgba(52, 211, 153, 0.15);
     }
 
     .node-card.failure {
       border-color: var(--accent-rose);
-      box-shadow: var(--shadow-glow-rose);
+      box-shadow: 0 0 15px rgba(248, 113, 113, 0.15);
     }
 
     .node-card.in_progress {
       border-color: var(--accent-amber);
-      box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+      box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
     }
 
     .node-header {
@@ -354,59 +355,60 @@
 
     .node-step {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 700;
       color: var(--text-muted);
     }
 
     .node-status-icon {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
     }
 
     .node-card h3 {
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
     }
 
     .node-card p {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
     }
 
     .node-meta {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.4rem;
-      margin-top: 0.4rem;
+      gap: 0.3rem;
+      margin-top: 0.3rem;
     }
 
     .tag {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-family: 'JetBrains Mono', monospace;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 0.2rem 0.5rem;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 0.2rem 0.4rem;
       border-radius: 6px;
     }
 
     .connector-line {
-      width: 40px;
+      width: 24px;
       height: 2px;
       background: var(--border-color);
       position: relative;
       overflow: hidden;
+      flex-shrink: 0;
     }
 
     .laser {
-      width: 20px;
+      width: 14px;
       height: 100%;
-      background: var(--accent-cyan);
-      box-shadow: 0 0 8px var(--accent-cyan);
+      background: var(--claude-orange);
+      box-shadow: 0 0 6px var(--claude-orange);
       animation: laserFlow 2s linear infinite;
     }
 
     @keyframes laserFlow {
-      0% { transform: translateX(-20px); }
-      100% { transform: translateX(60px); }
+      0% { transform: translateX(-14px); }
+      100% { transform: translateX(38px); }
     }
 
     /* Runs Table Section */
@@ -415,7 +417,7 @@
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-color);
-      border-radius: 16px;
+      border-radius: 20px;
       padding: 2rem;
       display: flex;
       flex-direction: column;
@@ -443,7 +445,7 @@
 
     .runs-table td {
       padding: 1.2rem 1rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       font-size: 0.9rem;
     }
 
@@ -453,7 +455,7 @@
     }
 
     .runs-table tbody tr:hover {
-      background: rgba(6, 182, 212, 0.08) !important;
+      background: rgba(218, 119, 86, 0.06) !important;
     }
 
     .loading-cell {
@@ -473,28 +475,27 @@
     }
 
     .status-pill.success {
-      background: rgba(16, 185, 129, 0.15);
+      background: rgba(52, 211, 153, 0.12);
       color: var(--accent-emerald);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      border: 1px solid rgba(52, 211, 153, 0.3);
     }
 
     .status-pill.failure {
-      background: rgba(244, 63, 94, 0.15);
+      background: rgba(248, 113, 113, 0.12);
       color: var(--accent-rose);
-      border: 1px solid rgba(244, 63, 94, 0.3);
+      border: 1px solid rgba(248, 113, 113, 0.3);
     }
 
     .status-pill.in_progress {
-      background: rgba(245, 158, 11, 0.15);
+      background: rgba(251, 191, 36, 0.12);
       color: var(--accent-amber);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+      border: 1px solid rgba(251, 191, 36, 0.3);
     }
 
     .branch-badge {
       font-family: 'JetBrains Mono', monospace;
-      background: rgba(6, 182, 212, 0.15);
-      color: var(--accent-cyan);
+      background: rgba(218, 119, 86, 0.12);
+      color: var(--claude-orange);
       padding: 0.2rem 0.5rem;
       border-radius: 6px;
       font-size: 0.8rem;
@@ -509,7 +510,7 @@
     }
 
     .action-link {
-      color: var(--accent-cyan);
+      color: var(--claude-orange);
       text-decoration: none;
       font-weight: 500;
     }
@@ -521,7 +522,7 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0, 0, 0, 0.78);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       z-index: 1000;
@@ -540,12 +541,12 @@
     }
 
     .modal-card {
-      background: #111827;
-      border: 1px solid var(--border-color);
-      border-radius: 20px;
+      background: #1c1b18;
+      border: 1px solid var(--border-color-strong);
+      border-radius: 24px;
       width: 100%;
-      max-width: 720px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      max-width: 760px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -563,7 +564,7 @@
       align-items: center;
       padding: 1.5rem 2rem;
       border-bottom: 1px solid var(--border-color);
-      background: rgba(31, 41, 55, 0.5);
+      background: rgba(35, 34, 30, 0.6);
     }
 
     .modal-header h2 {
@@ -583,7 +584,7 @@
 
     .close-btn:hover {
       color: white;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
     }
 
     .modal-body {
@@ -596,9 +597,9 @@
     }
 
     .modal-summary-box {
-      background: rgba(31, 41, 55, 0.6);
-      padding: 1rem 1.5rem;
-      border-radius: 12px;
+      background: rgba(35, 34, 30, 0.6);
+      padding: 1.2rem 1.5rem;
+      border-radius: 14px;
       border: 1px solid var(--border-color);
       font-size: 0.9rem;
       display: flex;
@@ -609,13 +610,13 @@
     .stepper-title {
       font-size: 1rem;
       font-weight: 600;
-      color: var(--accent-cyan);
+      color: var(--claude-orange);
     }
 
     .jobs-stepper {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 0.8rem;
     }
 
     .job-step-card {
@@ -623,20 +624,19 @@
       justify-content: space-between;
       align-items: center;
       padding: 1rem 1.2rem;
-      background: rgba(31, 41, 55, 0.5);
+      background: rgba(35, 34, 30, 0.5);
       border: 1px solid var(--border-color);
-      border-radius: 12px;
+      border-radius: 14px;
       transition: border-color 0.2s ease;
     }
 
     .job-step-card.completed {
-      border-color: rgba(16, 185, 129, 0.4);
+      border-color: rgba(52, 211, 153, 0.4);
     }
 
     .job-step-card.in_progress {
       border-color: var(--accent-amber);
-      background: rgba(245, 158, 11, 0.08);
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+      background: rgba(251, 191, 36, 0.08);
     }
 
     .job-step-card.queued {
@@ -645,7 +645,7 @@
 
     .job-step-card.failure {
       border-color: var(--accent-rose);
-      background: rgba(244, 63, 94, 0.08);
+      background: rgba(248, 113, 113, 0.08);
     }
 
     .job-info {
@@ -655,7 +655,7 @@
     }
 
     .job-step-icon {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
     }
 
     .job-name {
@@ -679,7 +679,7 @@
       border-top: 1px solid var(--border-color);
       display: flex;
       justify-content: flex-end;
-      background: rgba(31, 41, 55, 0.3);
+      background: rgba(35, 34, 30, 0.4);
     }
   </style>
 </head>
@@ -695,7 +695,7 @@
         </div>
         <div>
           <h1>ci-cd-kube <span>Live Pipeline Dashboard</span></h1>
-          <p class="subtitle">Supervision en Temps Réel des Pipelines GitHub Actions & DevSecOps</p>
+          <p class="subtitle">Supervision en Temps Réel des 6 Jobs CI/CD, DevSecOps & K8s</p>
         </div>
       </div>
 
@@ -738,7 +738,7 @@
     <!-- Key Metrics Stats Cards -->
     <section class="metrics-grid">
       <div class="metric-card">
-        <div class="metric-icon cyan">🚀</div>
+        <div class="metric-icon">🚀</div>
         <div class="metric-data">
           <span class="metric-label">Total Exécutions</span>
           <span id="statTotalRuns" class="metric-value">--</span>
@@ -746,7 +746,7 @@
       </div>
 
       <div class="metric-card">
-        <div class="metric-icon emerald">🟢</div>
+        <div class="metric-icon">🟢</div>
         <div class="metric-data">
           <span class="metric-label">Taux de Succès</span>
           <span id="statSuccessRate" class="metric-value">--%</span>
@@ -754,7 +754,7 @@
       </div>
 
       <div class="metric-card">
-        <div class="metric-icon purple">⏱️</div>
+        <div class="metric-icon">⏱️</div>
         <div class="metric-data">
           <span class="metric-label">Durée Moyenne</span>
           <span id="statAvgDuration" class="metric-value">--s</span>
@@ -762,19 +762,19 @@
       </div>
 
       <div class="metric-card">
-        <div class="metric-icon amber">🛡️</div>
+        <div class="metric-icon">☸️</div>
         <div class="metric-data">
-          <span class="metric-label">Statut DevSecOps</span>
-          <span id="statSecurityStatus" class="metric-value">0 Faille</span>
+          <span class="metric-label">Statut K8s Cloud</span>
+          <span id="statSecurityStatus" class="metric-value">2 Pods Active</span>
         </div>
       </div>
     </section>
 
-    <!-- Visual Interactive Pipeline Node Graph -->
+    <!-- Visual Interactive 6-Job Pipeline Graph -->
     <section class="pipeline-graph-container">
       <div class="section-header">
-        <h2>Architecture & Flux des Jobs de la Pipeline</h2>
-        <span class="badge">Pipeline CI/CD DevSecOps</span>
+        <h2>Architecture des 6 Jobs CI/CD & DevSecOps</h2>
+        <span class="badge">Pipeline Complète</span>
       </div>
 
       <div class="nodes-flow">
@@ -784,10 +784,10 @@
             <span class="node-status-icon" id="node1Icon">⏳</span>
           </div>
           <h3>Code Quality</h3>
-          <p>Typecheck TS & npm audit</p>
+          <p>Typecheck & npm audit</p>
           <div class="node-meta">
-            <span class="tag">tsc --noEmit</span>
-            <span class="tag">npm audit</span>
+            <span class="tag">tsc</span>
+            <span class="tag">audit</span>
           </div>
         </div>
 
@@ -799,10 +799,10 @@
             <span class="node-status-icon" id="node2Icon">⏳</span>
           </div>
           <h3>Unit Tests</h3>
-          <p>Vitest & Couverture (100%)</p>
+          <p>Vitest 100% Coverage</p>
           <div class="node-meta">
             <span class="tag">Vitest</span>
-            <span class="tag">Coverage 80%+</span>
+            <span class="tag">80%+</span>
           </div>
         </div>
 
@@ -813,8 +813,8 @@
             <span class="node-step">03</span>
             <span class="node-status-icon" id="node3Icon">⏳</span>
           </div>
-          <h3>Build & DevSecOps</h3>
-          <p>Trivy Scan & Push GHCR</p>
+          <h3>Docker DevSecOps</h3>
+          <p>Trivy Scan & GHCR</p>
           <div class="node-meta">
             <span class="tag">Trivy</span>
             <span class="tag">GHCR</span>
@@ -828,10 +828,39 @@
             <span class="node-step">04</span>
             <span class="node-status-icon" id="node4Icon">⏳</span>
           </div>
-          <h3>Notifications</h3>
-          <p>Google Chat Webhook</p>
+          <h3>K8s Deployment</h3>
+          <p>kubectl apply & rollout</p>
           <div class="node-meta">
-            <span class="tag">Google Chat</span>
+            <span class="tag">K8s</span>
+            <span class="tag">OVH</span>
+          </div>
+        </div>
+
+        <div class="connector-line"><div class="laser"></div></div>
+
+        <div class="node-card" id="nodeJob5">
+          <div class="node-header">
+            <span class="node-step">05</span>
+            <span class="node-status-icon" id="node5Icon">⏳</span>
+          </div>
+          <h3>E2E Live Test</h3>
+          <p>HTTP 200 Endpoint</p>
+          <div class="node-meta">
+            <span class="tag">curl</span>
+            <span class="tag">E2E</span>
+          </div>
+        </div>
+
+        <div class="connector-line"><div class="laser"></div></div>
+
+        <div class="node-card" id="nodeJob6">
+          <div class="node-header">
+            <span class="node-step">06</span>
+            <span class="node-status-icon" id="node6Icon">⏳</span>
+          </div>
+          <h3>Notifications</h3>
+          <p>Google Chat Alert</p>
+          <div class="node-meta">
             <span class="tag">Webhook</span>
           </div>
         </div>
@@ -841,7 +870,7 @@
     <!-- Recent Workflow Runs List -->
     <section class="runs-section">
       <div class="section-header">
-        <h2>Dernières Exécutions de la Pipeline <span>(Cliquez sur une ligne pour l'inspection en direct)</span></h2>
+        <h2>Dernières Exécutions de la Pipeline <span>(Cliquez sur une ligne pour l'inspection des 6 jobs)</span></h2>
       </div>
 
       <div class="runs-list-container">
@@ -873,7 +902,7 @@
       <div class="modal-header">
         <div>
           <h2 id="modalTitle">Inspection du Workflow Run</h2>
-          <p id="modalSubtitle" class="subtitle">Analyse en temps réel de l'avancement des Jobs</p>
+          <p id="modalSubtitle" class="subtitle">Analyse en temps réel de la progression des 6 Jobs</p>
         </div>
         <button id="closeModalBtn" class="close-btn">&times;</button>
       </div>
@@ -881,7 +910,7 @@
       <div class="modal-body">
         <div id="modalRunSummary" class="modal-summary-box"></div>
         
-        <h3 class="stepper-title">Progression des Jobs (Live Stepper)</h3>
+        <h3 class="stepper-title">Progression des 6 Jobs (Live Stepper)</h3>
         <div id="modalJobsList" class="jobs-stepper">
           <div class="loading-cell">Chargement du statut des jobs...</div>
         </div>
