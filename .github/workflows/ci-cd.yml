@@ -152,7 +152,7 @@ jobs:
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   deploy:
-    name: Job 5 - Continuous Deployment to Kubernetes
+    name: Job 4 - Continuous Deployment to Kubernetes
     runs-on: ubuntu-latest
     needs: build-and-push
 
@@ -181,17 +181,56 @@ jobs:
           echo "| 🔄 Rollout Status | 🟢 HEALTHY | Zero-Downtime Pod Update |" >> $GITHUB_STEP_SUMMARY
           echo "| 🌐 Public IP Endpoint | 🌐 ONLINE | \`http://138.201.184.143\` |" >> $GITHUB_STEP_SUMMARY
 
-  notify:
-    name: Job 4 - Google Chat Notification
+  e2e-test:
+    name: Job 5 - End-to-End (E2E) Live Cluster Integration Test
     runs-on: ubuntu-latest
-    needs: [typecheck, test, build-and-push, deploy]
+    needs: deploy
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run E2E Test 1 - Root Endpoint (HTTP 200)
+        run: |
+          echo "🧪 Testing GET http://138.201.184.143/..."
+          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://138.201.184.143/)
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ E2E Test 1 PASSED: Root endpoint returned HTTP 200 OK"
+          else
+            echo "❌ E2E Test 1 FAILED: Root endpoint returned HTTP $HTTP_STATUS"
+            exit 1
+          fi
+
+      - name: Run E2E Test 2 - Dashboard Route (HTTP 200)
+        run: |
+          echo "🧪 Testing GET http://138.201.184.143/dashboard..."
+          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://138.201.184.143/dashboard)
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ E2E Test 2 PASSED: Dashboard route returned HTTP 200 OK"
+          else
+            echo "❌ E2E Test 2 FAILED: Dashboard route returned HTTP $HTTP_STATUS"
+            exit 1
+          fi
+
+      - name: Generate E2E Test Step Summary
+        run: |
+          echo "## 🧪 End-to-End (E2E) Live Integration Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E Integration Test | Target URL | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :---: |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🌐 Root Endpoint Test | \`http://138.201.184.143/\` | ✅ PASSED (HTTP 200) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📊 Live Dashboard Test | \`http://138.201.184.143/dashboard\` | ✅ PASSED (HTTP 200) |" >> $GITHUB_STEP_SUMMARY
+
+  notify:
+    name: Job 6 - Google Chat Notification
+    runs-on: ubuntu-latest
+    needs: [typecheck, test, build-and-push, deploy, e2e-test]
     if: always()
 
     steps:
       - name: Send Google Chat Notification
         env:
           WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
-          WORKFLOW_STATUS: ${{ (needs.typecheck.result == 'success' && needs.test.result == 'success' && (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped') && (needs.deploy.result == 'success' || needs.deploy.result == 'skipped')) && 'SUCCESS' || 'FAILURE' }}
+          WORKFLOW_STATUS: ${{ (needs.typecheck.result == 'success' && needs.test.result == 'success' && (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped') && (needs.deploy.result == 'success' || needs.deploy.result == 'skipped') && (needs.e2e-test.result == 'success' || needs.e2e-test.result == 'skipped')) && 'SUCCESS' || 'FAILURE' }}
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
             echo "⚠️ GOOGLE_CHAT_WEBHOOK secret is not set. Skipping Google Chat notification."
@@ -199,8 +238,8 @@ jobs:
           fi
 
           if [ "$WORKFLOW_STATUS" = "SUCCESS" ]; then
-            TITLE="🟢 CI/CD Pipeline & K8s Deployment Success"
-            TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Successful build, validation & K8s Deployment.\n*Live URL:* http://138.201.184.143\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            TITLE="🟢 CI/CD Pipeline, K8s Deployment & E2E Tests Success"
+            TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Successful build, validation, K8s Deployment & E2E Integration Tests.\n*Live URL:* http://138.201.184.143\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           else
             TITLE="🔴 CI/CD Pipeline Failed"
             TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Pipeline failed. Check logs for details.\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
