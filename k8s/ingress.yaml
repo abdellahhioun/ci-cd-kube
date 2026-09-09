@@ -7,7 +7,21 @@ metadata:
   annotations:
     ingress.kubernetes.io/ssl-redirect: "false"
 spec:
+  tls:
+    - hosts:
+        - 138.201.184.143.sslip.io
+      secretName: ci-cd-kube-tls
   rules:
+    - host: 138.201.184.143.sslip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ci-cd-kube-service
+                port:
+                  number: 80
     - http:
         paths:
           - path: /
@@ -17,3 +31,4 @@ spec:
                 name: ci-cd-kube-service
                 port:
                   number: 80
+
