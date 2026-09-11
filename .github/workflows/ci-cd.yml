@@ -17,20 +17,16 @@ permissions:
   packages: write
   security-events: write
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-  ACTIONS_NODE_OPTION: "--max-old-space-size=4096"
-
 jobs:
   typecheck:
-    name: Job 1 - Code Quality, Typecheck & Security Audit
+    name: Job 1 - Code Quality and Typecheck
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (v24)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -39,10 +35,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Dependency Security Audit
+      - name: Run dependency security audit
         run: npm audit --omit=dev --audit-level=high
 
-      - name: Run Strict TypeScript Typecheck
+      - name: Run TypeScript typecheck
         run: npm run typecheck
 
       - name: Report Quality Check Status
@@ -51,7 +47,7 @@ jobs:
           echo "✅ TypeScript compilation and production dependency security audit passed successfully." >> $GITHUB_STEP_SUMMARY
 
   test:
-    name: Job 2 - Unit Tests & Coverage Report
+    name: Job 2 - Unit Tests and Coverage
     runs-on: ubuntu-latest
     needs: typecheck
 
@@ -59,7 +55,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (v24)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -68,10 +64,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Tests with Coverage
+      - name: Run unit tests with coverage
         run: npm run test:coverage
 
-      - name: Upload Coverage HTML Artifact
+      - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: code-coverage-report
@@ -83,7 +79,7 @@ jobs:
           echo "✅ Vitest unit test suite passed and code coverage report was generated." >> $GITHUB_STEP_SUMMARY
 
   build-and-push:
-    name: Job 3 - Build, Security Scan & Push Docker Image
+    name: Job 3 - Build and Security Scan Docker Image
     runs-on: ubuntu-latest
     needs: test
 
@@ -94,14 +90,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry (GHCR)
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker Metadata
+      - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -112,7 +108,7 @@ jobs:
             type=sha,prefix=sha-
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
 
-      - name: Build Docker Image locally for Security Scanning
+      - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -122,7 +118,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run Trivy Vulnerability Scanner (DevSecOps)
+      - name: Run Trivy security scanner
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'ci-cd-kube:local-test'
@@ -132,7 +128,7 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
-      - name: Push Docker Image to GHCR
+      - name: Push Docker image to GHCR
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -148,7 +144,7 @@ jobs:
           echo "✅ Docker image built, Trivy vulnerability scan passed, and package pushed to GHCR." >> $GITHUB_STEP_SUMMARY
 
   e2e-test:
-    name: Job 4 - Pre-Deployment End-to-End (E2E) & Integration Testing
+    name: Job 4 - Pre-Deployment Integration Tests
     runs-on: ubuntu-latest
     needs: build-and-push
 
@@ -156,7 +152,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (v24)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -165,51 +161,45 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Start Container / Application Server in CI Runner
+      - name: Start application server
         run: |
-          echo "🚀 Starting App Server locally on port 3000..."
+          echo "Starting application server on port 3000..."
           npx tsx src/index.ts &
-          
-          # Wait up to 15 seconds for app server to be ready
           for i in {1..15}; do
             if curl -s http://localhost:3000/ > /dev/null; then
-              echo "✅ App Server is UP and listening on http://localhost:3000"
+              echo "Application server is running."
               break
             fi
-            echo "Waiting for App Server..."
             sleep 1
           done
 
-      - name: Run E2E Test 1 - Root Route & Content Assertion
+      - name: Verify root endpoint
         run: |
-          echo "🧪 E2E Asserting GET http://localhost:3000/..."
           RESPONSE=$(curl -s http://localhost:3000/)
           if [[ "$RESPONSE" == *"Hello Hono!"* ]]; then
-            echo "✅ E2E Test 1 PASSED: Root route returned valid response ('Hello Hono!')"
+            echo "Root endpoint test passed."
           else
-            echo "❌ E2E Test 1 FAILED: Unexpected response '$RESPONSE'"
+            echo "Root endpoint test failed."
             exit 1
           fi
 
-      - name: Run E2E Test 2 - Dashboard Route Assertion
+      - name: Verify dashboard route
         run: |
-          echo "🧪 E2E Asserting GET http://localhost:3000/dashboard..."
           HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:3000/dashboard)
           if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "✅ E2E Test 2 PASSED: Dashboard route returned HTTP 200 OK"
+            echo "Dashboard route test passed."
           else
-            echo "❌ E2E Test 2 FAILED: Dashboard route returned HTTP $HTTP_STATUS"
+            echo "Dashboard route test failed."
             exit 1
           fi
 
-      - name: Run E2E Test 3 - K8s Pods API Contract Assertion
+      - name: Verify pods API endpoint
         run: |
-          echo "🧪 E2E Asserting GET http://localhost:3000/api/k8s/pods..."
           HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:3000/api/k8s/pods)
           if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "✅ E2E Test 3 PASSED: Pods API route returned HTTP 200 OK"
+            echo "Pods API test passed."
           else
-            echo "❌ E2E Test 3 FAILED: Pods API route returned HTTP $HTTP_STATUS"
+            echo "Pods API test failed."
             exit 1
           fi
 
@@ -227,13 +217,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Kubernetes Context
+      - name: Set up Kubernetes context
         uses: azure/k8s-set-context@v4
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBECONFIG_DATA }}
 
-      - name: Deploy to Kubernetes Cluster
+      - name: Deploy to Kubernetes cluster
         run: |
           kubectl apply -f k8s/
           kubectl rollout restart deployment/ci-cd-kube-deployment
@@ -245,7 +235,7 @@ jobs:
           echo "✅ Applied Kubernetes manifests and completed zero-downtime rollout." >> $GITHUB_STEP_SUMMARY
 
   smoke-test:
-    name: Job 6 - Post-Deployment Smoke Test & Cluster Health Check
+    name: Job 6 - Post-Deployment Smoke Test
     runs-on: ubuntu-latest
     needs: deploy
 
@@ -253,25 +243,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run Cluster Smoke Test 1 - Public IP Root Endpoint
+      - name: Verify public IP endpoint
         run: |
-          echo "🧪 Smoke Testing http://138.201.184.143/..."
           HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://138.201.184.143/)
           if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "✅ Cluster Smoke Test 1 PASSED: Public IP returned HTTP 200 OK"
+            echo "Public IP smoke test passed."
           else
-            echo "❌ Cluster Smoke Test 1 FAILED: Public IP returned HTTP $HTTP_STATUS"
+            echo "Public IP smoke test failed."
             exit 1
           fi
 
-      - name: Run Cluster Smoke Test 2 - HTTPS Domain Route
+      - name: Verify domain endpoint
         run: |
-          echo "🧪 Smoke Testing https://etudiant-05.development.atelier.ovh/dashboard..."
           HTTP_STATUS=$(curl -k -o /dev/null -s -w "%{http_code}" https://etudiant-05.development.atelier.ovh/dashboard)
           if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "✅ Cluster Smoke Test 2 PASSED: Domain returned HTTP 200 OK"
+            echo "Domain smoke test passed."
           else
-            echo "❌ Cluster Smoke Test 2 FAILED: Domain returned HTTP $HTTP_STATUS"
+            echo "Domain smoke test failed."
             exit 1
           fi
 
@@ -287,22 +275,22 @@ jobs:
     if: always()
 
     steps:
-      - name: Send Google Chat Notification
+      - name: Send notification
         env:
           WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
           WORKFLOW_STATUS: ${{ (needs.typecheck.result == 'success' && needs.test.result == 'success' && needs.build-and-push.result == 'success' && needs.e2e-test.result == 'success' && (needs.deploy.result == 'success' || needs.deploy.result == 'skipped') && (needs.smoke-test.result == 'success' || needs.smoke-test.result == 'skipped')) && 'SUCCESS' || 'FAILURE' }}
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
-            echo "⚠️ GOOGLE_CHAT_WEBHOOK secret is not set. Skipping Google Chat notification."
+            echo "GOOGLE_CHAT_WEBHOOK secret is not set. Skipping notification."
             exit 0
           fi
 
           if [ "$WORKFLOW_STATUS" = "SUCCESS" ]; then
-            TITLE="🟢 DevSecOps CI/CD Pipeline & K8s Deployment Success"
-            TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Successful Quality Check, Unit Tests, Container Build, Pre-Deploy E2E Gate, K8s Deployment & Cluster Smoke Tests.\n*Live URL:* https://etudiant-05.development.atelier.ovh/dashboard\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            TITLE="CI/CD Pipeline Success"
+            TEXT="Repository: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nAuthor: ${{ github.actor }}\nCommit: ${{ github.sha }}\nStatus: Pipeline completed successfully."
           else
-            TITLE="🔴 DevSecOps CI/CD Pipeline Failed"
-            TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Pipeline failed. Check logs for details.\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            TITLE="CI/CD Pipeline Failed"
+            TEXT="Repository: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nAuthor: ${{ github.actor }}\nCommit: ${{ github.sha }}\nStatus: Pipeline failed. Check logs for details."
           fi
 
           curl -H "Content-Type: application/json" \
