@@ -4,6 +4,9 @@
   "description": "CI/CD automated pipeline with GitHub Actions, Hono app, and Kubernetes deployment placeholders",
   "main": "src/index.ts",
   "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
