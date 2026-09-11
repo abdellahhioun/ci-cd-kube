@@ -45,18 +45,10 @@ jobs:
       - name: Run Strict TypeScript Typecheck
         run: npm run typecheck
 
-      - name: Generate Code Quality & Security Step Summary
+      - name: Report Quality Check Status
         run: |
-          TS_FILES=$(find src tests -name "*.ts" 2>/dev/null | wc -l | tr -d ' ')
-          TS_LINES=$(find src tests -name "*.ts" -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
-          NODE_VER=$(node -v)
-          
-          echo "## 🎯 Job 1 - Dynamic Code Quality & Security Audit Summary" >> $GITHUB_STEP_SUMMARY
-          echo "| Check Category | Inspected Metric | Real-time Status |" >> $GITHUB_STEP_SUMMARY
-          echo "| :--- | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📘 TypeScript Compiler | ${TS_FILES} files (${TS_LINES} LOC) | ✅ 0 Type Errors |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔒 Dependency Security | Production Packages | ✅ 0 High/Critical Vulnerabilities |" >> $GITHUB_STEP_SUMMARY
-          echo "| ⚡ Execution Engine | Node.js ${NODE_VER} | 🟢 Native Node 24 Runtime |" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎯 Job 1 - Code Quality & Security Audit" >> $GITHUB_STEP_SUMMARY
+          echo "✅ TypeScript compilation and production dependency security audit passed successfully." >> $GITHUB_STEP_SUMMARY
 
   test:
     name: Job 2 - Unit Tests & Coverage Report
@@ -85,27 +77,10 @@ jobs:
           name: code-coverage-report
           path: coverage/
 
-      - name: Generate Dynamic Test Coverage Step Summary
+      - name: Report Unit Test Status
         run: |
-          if [ -f coverage/coverage-summary.json ]; then
-            STMT_PCT=$(jq -r '.total.statements.pct' coverage/coverage-summary.json)%
-            LINE_PCT=$(jq -r '.total.lines.pct' coverage/coverage-summary.json)%
-            BRANCH_PCT=$(jq -r '.total.branches.pct' coverage/coverage-summary.json)%
-            FUNC_PCT=$(jq -r '.total.functions.pct' coverage/coverage-summary.json)%
-          else
-            STMT_PCT="100%"
-            LINE_PCT="100%"
-            BRANCH_PCT="100%"
-            FUNC_PCT="100%"
-          fi
-
-          echo "## 📊 Job 2 - Dynamic Test & Coverage Summary" >> $GITHUB_STEP_SUMMARY
-          echo "| Coverage Category | Real-time Coverage | Threshold (80%) | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "| :--- | :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📋 Statements | ${STMT_PCT} | ≥ 80% | ✅ PASSED |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📉 Lines | ${LINE_PCT} | ≥ 80% | ✅ PASSED |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔀 Branches | ${BRANCH_PCT} | ≥ 80% | ✅ PASSED |" >> $GITHUB_STEP_SUMMARY
-          echo "| ⚡ Functions | ${FUNC_PCT} | ≥ 80% | ✅ PASSED |" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Job 2 - Unit Tests & Code Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Vitest unit test suite passed and code coverage report was generated." >> $GITHUB_STEP_SUMMARY
 
   build-and-push:
     name: Job 3 - Build, Security Scan & Push Docker Image
@@ -167,22 +142,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
 
-      - name: Generate Dynamic DevSecOps & Container Step Summary #pay more attention to this part
+      - name: Report DevSecOps Build Status
         run: |
-          IMG_SIZE=$(docker image inspect ci-cd-kube:local-test --format='{{.Size}}' 2>/dev/null | awk '{printf "%.2f MB", $1/1024/1024}')
-          [ -z "$IMG_SIZE" ] && IMG_SIZE="~120 MB"
-
-          echo "## 🛡️ Job 3 - Dynamic DevSecOps & Container Registry Summary" >> $GITHUB_STEP_SUMMARY
-          echo "| Security & Build Metric | Dynamic Value | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "| :--- | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔍 Trivy Vulnerability Scan | OS & Library Dependencies | ✅ 0 High/Critical |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🐳 Docker Image Size | ${IMG_SIZE} | 🟢 Optimized Layer |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🚀 GHCR Package Target | \`ghcr.io/${{ github.repository }}:dev\` | 📦 Published |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 Pull Image Command" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/${{ github.repository }}:dev" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "## 🛡️ Job 3 - DevSecOps Build & Container Security" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Docker image built, Trivy vulnerability scan passed, and package pushed to GHCR." >> $GITHUB_STEP_SUMMARY
 
   e2e-test:
     name: Job 4 - Pre-Deployment End-to-End (E2E) & Integration Testing
@@ -250,17 +213,10 @@ jobs:
             exit 1
           fi
 
-      - name: Generate Pre-Deployment E2E Step Summary
+      - name: Report Pre-Deployment E2E Status
         run: |
-          echo "## 🧪 Job 4 - Pre-Deployment End-to-End (E2E) Summary" >> $GITHUB_STEP_SUMMARY
-          echo "| Pre-Deployment Assertion | Target URL | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "| :--- | :--- | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🌐 Root Route Content | \`http://localhost:3000/\` | ✅ PASSED (Hello Hono!) |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📊 Dashboard Rendering | \`http://localhost:3000/dashboard\` | ✅ PASSED (HTTP 200) |" >> $GITHUB_STEP_SUMMARY
-          echo "| ☸️ Pods API Contract | \`http://localhost:3000/api/k8s/pods\` | ✅ PASSED (HTTP 200) |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> [!NOTE]" >> $GITHUB_STEP_SUMMARY
-          echo "> **Gate Validation Passed**: Container image successfully verified before Kubernetes deployment." >> $GITHUB_STEP_SUMMARY
+          echo "## 🧪 Job 4 - Pre-Deployment End-to-End (E2E) Validation" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All application routes and API contracts verified before Kubernetes deployment." >> $GITHUB_STEP_SUMMARY
 
   deploy:
     name: Job 5 - Continuous Deployment to Kubernetes
@@ -281,20 +237,12 @@ jobs:
         run: |
           kubectl apply -f k8s/
           kubectl rollout restart deployment/ci-cd-kube-deployment
-          kubectl rollout status deployment/ci-cd-kube-deployment --timeout=90s #pay more attention to this part it can change in the future 
+          kubectl rollout status deployment/ci-cd-kube-deployment --timeout=90s
 
-      - name: Generate Dynamic Kubernetes Deployment Step Summary
+      - name: Report Kubernetes Deployment Status
         run: |
-          POD_COUNT=$(kubectl get pods -l app=ci-cd-kube --no-headers 2>/dev/null | wc -l | tr -d ' ')
-          READY_PODS=$(kubectl get pods -l app=ci-cd-kube --no-headers 2>/dev/null | grep "Running" | wc -l | tr -d ' ')
-
-          echo "## ☸️ Job 5 - Dynamic Kubernetes Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "| Cluster Metric | Live Value | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "| :--- | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🚀 Deployment Rollout | Zero-Downtime Update | ✅ SUCCESSFUL |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📦 Active Replicas | ${READY_PODS} / ${POD_COUNT} Pods Running | 🟢 HEALTHY |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🌐 Service Endpoint | \`http://138.201.184.143\` | 🌐 LIVE |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔒 HTTPS Secure Domain | \`https://etudiant-05.development.atelier.ovh\` | 🔒 ACTIVE |" >> $GITHUB_STEP_SUMMARY
+          echo "## ☸️ Job 5 - Kubernetes Continuous Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Applied Kubernetes manifests and completed zero-downtime rollout." >> $GITHUB_STEP_SUMMARY
 
   smoke-test:
     name: Job 6 - Post-Deployment Smoke Test & Cluster Health Check
@@ -327,22 +275,10 @@ jobs:
             exit 1
           fi
 
-      - name: Generate Post-Deployment Smoke Test Step Summary
+      - name: Report Post-Deployment Smoke Test Status
         run: |
-          ROOT_METRICS=$(curl -o /dev/null -s -w "%{http_code} %{time_total}" http://138.201.184.143/ || echo "500 0")
-          DASH_METRICS=$(curl -k -o /dev/null -s -w "%{http_code} %{time_total}" https://etudiant-05.development.atelier.ovh/dashboard || echo "500 0")
-          
-          ROOT_CODE=$(echo $ROOT_METRICS | awk '{print $1}')
-          ROOT_TIME=$(echo $ROOT_METRICS | awk '{printf "%.0f ms", $2 * 1000}')
-          
-          DASH_CODE=$(echo $DASH_METRICS | awk '{print $1}')
-          DASH_TIME=$(echo $DASH_METRICS | awk '{printf "%.0f ms", $2 * 1000}')
-
-          echo "## 💨 Job 6 - Post-Deployment Smoke Test & Health Summary" >> $GITHUB_STEP_SUMMARY
-          echo "| Live Cluster Endpoint | Response Code | Measured Latency | Health Status |" >> $GITHUB_STEP_SUMMARY
-          echo "| :--- | :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🌐 Cluster Public IP (\`/\`) | HTTP ${ROOT_CODE} | ${ROOT_TIME} | 🟢 HEALTHY |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔒 HTTPS OVH Domain (\`/dashboard\`) | HTTP ${DASH_CODE} | ${DASH_TIME} | 🟢 HEALTHY |" >> $GITHUB_STEP_SUMMARY
+          echo "## 💨 Job 6 - Post-Deployment Cluster Smoke Test" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Verified live cluster public IP and HTTPS domain health." >> $GITHUB_STEP_SUMMARY
 
   notify:
     name: Job 7 - Google Chat Notification
