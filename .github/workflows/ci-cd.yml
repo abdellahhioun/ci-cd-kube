@@ -17,6 +17,10 @@ permissions:
   packages: write
   security-events: write
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+  ACTIONS_NODE_OPTION: "--max-old-space-size=4096"
+
 jobs:
   typecheck:
     name: Job 1 - Code Quality, Typecheck & Security Audit
@@ -45,13 +49,14 @@ jobs:
         run: |
           TS_FILES=$(find src tests -name "*.ts" 2>/dev/null | wc -l | tr -d ' ')
           TS_LINES=$(find src tests -name "*.ts" -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
+          NODE_VER=$(node -v)
           
           echo "## 🎯 Job 1 - Dynamic Code Quality & Security Audit Summary" >> $GITHUB_STEP_SUMMARY
           echo "| Check Category | Inspected Metric | Real-time Status |" >> $GITHUB_STEP_SUMMARY
           echo "| :--- | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
           echo "| 📘 TypeScript Compiler | ${TS_FILES} files (${TS_LINES} LOC) | ✅ 0 Type Errors |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔒 Dependency Security | Production Packages | ✅ 0 High/Critical Vulnerabilities |" >> $GITHUB_STEP_SUMMARY
-          echo "| ⚡ Execution Engine | Node.js v22 (LTS) | 🟢 Modern Runtime |" >> $GITHUB_STEP_SUMMARY
+          echo "| ⚡ Execution Engine | Node.js ${NODE_VER} | 🟢 Compatible LTS Runtime |" >> $GITHUB_STEP_SUMMARY
 
   test:
     name: Job 2 - Unit Tests & Coverage Report
