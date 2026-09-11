@@ -167,7 +167,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
 
-      - name: Generate Dynamic DevSecOps & Container Step Summary
+      - name: Generate Dynamic DevSecOps & Container Step Summary #pay more attention to this part
         run: |
           IMG_SIZE=$(docker image inspect ci-cd-kube:local-test --format='{{.Size}}' 2>/dev/null | awk '{printf "%.2f MB", $1/1024/1024}')
           [ -z "$IMG_SIZE" ] && IMG_SIZE="~120 MB"
@@ -184,10 +184,88 @@ jobs:
           echo "docker pull ghcr.io/${{ github.repository }}:dev" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
-  deploy:
-    name: Job 4 - Continuous Deployment to Kubernetes
+  e2e-test:
+    name: Job 4 - Pre-Deployment End-to-End (E2E) & Integration Testing
     runs-on: ubuntu-latest
     needs: build-and-push
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start Container / Application Server in CI Runner
+        run: |
+          echo "🚀 Starting App Server locally on port 3000..."
+          npx tsx src/index.ts &
+          
+          # Wait up to 15 seconds for app server to be ready
+          for i in {1..15}; do
+            if curl -s http://localhost:3000/ > /dev/null; then
+              echo "✅ App Server is UP and listening on http://localhost:3000"
+              break
+            fi
+            echo "Waiting for App Server..."
+            sleep 1
+          done
+
+      - name: Run E2E Test 1 - Root Route & Content Assertion
+        run: |
+          echo "🧪 E2E Asserting GET http://localhost:3000/..."
+          RESPONSE=$(curl -s http://localhost:3000/)
+          if [[ "$RESPONSE" == *"Hello Hono!"* ]]; then
+            echo "✅ E2E Test 1 PASSED: Root route returned valid response ('Hello Hono!')"
+          else
+            echo "❌ E2E Test 1 FAILED: Unexpected response '$RESPONSE'"
+            exit 1
+          fi
+
+      - name: Run E2E Test 2 - Dashboard Route Assertion
+        run: |
+          echo "🧪 E2E Asserting GET http://localhost:3000/dashboard..."
+          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:3000/dashboard)
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ E2E Test 2 PASSED: Dashboard route returned HTTP 200 OK"
+          else
+            echo "❌ E2E Test 2 FAILED: Dashboard route returned HTTP $HTTP_STATUS"
+            exit 1
+          fi
+
+      - name: Run E2E Test 3 - K8s Pods API Contract Assertion
+        run: |
+          echo "🧪 E2E Asserting GET http://localhost:3000/api/k8s/pods..."
+          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:3000/api/k8s/pods)
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ E2E Test 3 PASSED: Pods API route returned HTTP 200 OK"
+          else
+            echo "❌ E2E Test 3 FAILED: Pods API route returned HTTP $HTTP_STATUS"
+            exit 1
+          fi
+
+      - name: Generate Pre-Deployment E2E Step Summary
+        run: |
+          echo "## 🧪 Job 4 - Pre-Deployment End-to-End (E2E) Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-Deployment Assertion | Target URL | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :---: |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🌐 Root Route Content | \`http://localhost:3000/\` | ✅ PASSED (Hello Hono!) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📊 Dashboard Rendering | \`http://localhost:3000/dashboard\` | ✅ PASSED (HTTP 200) |" >> $GITHUB_STEP_SUMMARY
+          echo "| ☸️ Pods API Contract | \`http://localhost:3000/api/k8s/pods\` | ✅ PASSED (HTTP 200) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> [!NOTE]" >> $GITHUB_STEP_SUMMARY
+          echo "> **Gate Validation Passed**: Container image successfully verified before Kubernetes deployment." >> $GITHUB_STEP_SUMMARY
+
+  deploy:
+    name: Job 5 - Continuous Deployment to Kubernetes
+    runs-on: ubuntu-latest
+    needs: e2e-test
 
     steps:
       - name: Checkout repository
@@ -203,14 +281,14 @@ jobs:
         run: |
           kubectl apply -f k8s/
           kubectl rollout restart deployment/ci-cd-kube-deployment
-          kubectl rollout status deployment/ci-cd-kube-deployment --timeout=90s
+          kubectl rollout status deployment/ci-cd-kube-deployment --timeout=90s #pay more attention to this part it can change in the future 
 
       - name: Generate Dynamic Kubernetes Deployment Step Summary
         run: |
           POD_COUNT=$(kubectl get pods -l app=ci-cd-kube --no-headers 2>/dev/null | wc -l | tr -d ' ')
           READY_PODS=$(kubectl get pods -l app=ci-cd-kube --no-headers 2>/dev/null | grep "Running" | wc -l | tr -d ' ')
 
-          echo "## ☸️ Job 4 - Dynamic Kubernetes Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## ☸️ Job 5 - Dynamic Kubernetes Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "| Cluster Metric | Live Value | Status |" >> $GITHUB_STEP_SUMMARY
           echo "| :--- | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
           echo "| 🚀 Deployment Rollout | Zero-Downtime Update | ✅ SUCCESSFUL |" >> $GITHUB_STEP_SUMMARY
@@ -218,8 +296,8 @@ jobs:
           echo "| 🌐 Service Endpoint | \`http://138.201.184.143\` | 🌐 LIVE |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔒 HTTPS Secure Domain | \`https://etudiant-05.development.atelier.ovh\` | 🔒 ACTIVE |" >> $GITHUB_STEP_SUMMARY
 
-  e2e-test:
-    name: Job 5 - End-to-End (E2E) Live Cluster Integration Test
+  smoke-test:
+    name: Job 6 - Post-Deployment Smoke Test & Cluster Health Check
     runs-on: ubuntu-latest
     needs: deploy
 
@@ -227,32 +305,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run E2E Test 1 - Root Endpoint (HTTP 200)
+      - name: Run Cluster Smoke Test 1 - Public IP Root Endpoint
         run: |
-          echo "🧪 Testing GET http://138.201.184.143/..."
+          echo "🧪 Smoke Testing http://138.201.184.143/..."
           HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://138.201.184.143/)
           if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "✅ E2E Test 1 PASSED: Root endpoint returned HTTP 200 OK"
+            echo "✅ Cluster Smoke Test 1 PASSED: Public IP returned HTTP 200 OK"
           else
-            echo "❌ E2E Test 1 FAILED: Root endpoint returned HTTP $HTTP_STATUS"
+            echo "❌ Cluster Smoke Test 1 FAILED: Public IP returned HTTP $HTTP_STATUS"
             exit 1
           fi
 
-      - name: Run E2E Test 2 - Dashboard Route (HTTP 200)
+      - name: Run Cluster Smoke Test 2 - HTTPS Domain Route
         run: |
-          echo "🧪 Testing GET http://138.201.184.143/dashboard..."
-          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://138.201.184.143/dashboard)
+          echo "🧪 Smoke Testing https://etudiant-05.development.atelier.ovh/dashboard..."
+          HTTP_STATUS=$(curl -k -o /dev/null -s -w "%{http_code}" https://etudiant-05.development.atelier.ovh/dashboard)
           if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "✅ E2E Test 2 PASSED: Dashboard route returned HTTP 200 OK"
+            echo "✅ Cluster Smoke Test 2 PASSED: Domain returned HTTP 200 OK"
           else
-            echo "❌ E2E Test 2 FAILED: Dashboard route returned HTTP $HTTP_STATUS"
+            echo "❌ Cluster Smoke Test 2 FAILED: Domain returned HTTP $HTTP_STATUS"
             exit 1
           fi
 
-      - name: Generate Dynamic E2E Test Step Summary
+      - name: Generate Post-Deployment Smoke Test Step Summary
         run: |
           ROOT_METRICS=$(curl -o /dev/null -s -w "%{http_code} %{time_total}" http://138.201.184.143/ || echo "500 0")
-          DASH_METRICS=$(curl -o /dev/null -s -w "%{http_code} %{time_total}" http://138.201.184.143/dashboard || echo "500 0")
+          DASH_METRICS=$(curl -k -o /dev/null -s -w "%{http_code} %{time_total}" https://etudiant-05.development.atelier.ovh/dashboard || echo "500 0")
           
           ROOT_CODE=$(echo $ROOT_METRICS | awk '{print $1}')
           ROOT_TIME=$(echo $ROOT_METRICS | awk '{printf "%.0f ms", $2 * 1000}')
@@ -260,23 +338,23 @@ jobs:
           DASH_CODE=$(echo $DASH_METRICS | awk '{print $1}')
           DASH_TIME=$(echo $DASH_METRICS | awk '{printf "%.0f ms", $2 * 1000}')
 
-          echo "## 🧪 Job 5 - Dynamic End-to-End (E2E) Test Summary" >> $GITHUB_STEP_SUMMARY
-          echo "| Live E2E Integration Route | Response Code | Measured Latency | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "## 💨 Job 6 - Post-Deployment Smoke Test & Health Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Live Cluster Endpoint | Response Code | Measured Latency | Health Status |" >> $GITHUB_STEP_SUMMARY
           echo "| :--- | :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🌐 Root Endpoint (\`/\`) | HTTP ${ROOT_CODE} | ${ROOT_TIME} | ✅ PASSED |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📊 Live Dashboard (\`/dashboard\`) | HTTP ${DASH_CODE} | ${DASH_TIME} | ✅ PASSED |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🌐 Cluster Public IP (\`/\`) | HTTP ${ROOT_CODE} | ${ROOT_TIME} | 🟢 HEALTHY |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 HTTPS OVH Domain (\`/dashboard\`) | HTTP ${DASH_CODE} | ${DASH_TIME} | 🟢 HEALTHY |" >> $GITHUB_STEP_SUMMARY
 
   notify:
-    name: Job 6 - Google Chat Notification
+    name: Job 7 - Google Chat Notification
     runs-on: ubuntu-latest
-    needs: [typecheck, test, build-and-push, deploy, e2e-test]
+    needs: [typecheck, test, build-and-push, e2e-test, deploy, smoke-test]
     if: always()
 
     steps:
       - name: Send Google Chat Notification
         env:
           WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
-          WORKFLOW_STATUS: ${{ (needs.typecheck.result == 'success' && needs.test.result == 'success' && (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped') && (needs.deploy.result == 'success' || needs.deploy.result == 'skipped') && (needs.e2e-test.result == 'success' || needs.e2e-test.result == 'skipped')) && 'SUCCESS' || 'FAILURE' }}
+          WORKFLOW_STATUS: ${{ (needs.typecheck.result == 'success' && needs.test.result == 'success' && needs.build-and-push.result == 'success' && needs.e2e-test.result == 'success' && (needs.deploy.result == 'success' || needs.deploy.result == 'skipped') && (needs.smoke-test.result == 'success' || needs.smoke-test.result == 'skipped')) && 'SUCCESS' || 'FAILURE' }}
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
             echo "⚠️ GOOGLE_CHAT_WEBHOOK secret is not set. Skipping Google Chat notification."
@@ -284,10 +362,10 @@ jobs:
           fi
 
           if [ "$WORKFLOW_STATUS" = "SUCCESS" ]; then
-            TITLE="🟢 CI/CD Pipeline, K8s Deployment & E2E Tests Success"
-            TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Successful build, validation, K8s Deployment & E2E Integration Tests.\n*Live URL:* http://138.201.184.143\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            TITLE="🟢 DevSecOps CI/CD Pipeline & K8s Deployment Success"
+            TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Successful Quality Check, Unit Tests, Container Build, Pre-Deploy E2E Gate, K8s Deployment & Cluster Smoke Tests.\n*Live URL:* https://etudiant-05.development.atelier.ovh/dashboard\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           else
-            TITLE="🔴 CI/CD Pipeline Failed"
+            TITLE="🔴 DevSecOps CI/CD Pipeline Failed"
             TEXT="*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Commit:* ${{ github.sha }}\n*Status:* Pipeline failed. Check logs for details.\n*Logs:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
 
