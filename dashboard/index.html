@@ -735,6 +735,16 @@
       </div>
     </section>
 
+    <!-- Interactive E2E Pod Simulator Form -->
+    <section class="controls-section">
+      <form id="e2eForm" style="display: flex; align-items: center; gap: 1rem; width: 100%;">
+        <label for="podNameInput" style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">Simulateur Pod (E2E Test) :</label>
+        <input id="podNameInput" type="text" placeholder="Entrez le nom du Pod..." class="custom-select" style="flex: 1; min-width: 200px;" required />
+        <button id="submitPodBtn" type="submit" class="btn btn-secondary">Simuler Pod</button>
+      </form>
+      <div id="e2eSuccessMessage" class="hidden" style="color: var(--accent-emerald); font-weight: 600; font-size: 0.9rem; margin-left: 1rem;"></div>
+    </section>
+
     <!-- Key Metrics Stats Cards -->
     <section class="metrics-grid">
       <div class="metric-card">

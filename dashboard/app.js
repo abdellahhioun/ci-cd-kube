@@ -46,6 +46,19 @@ function setupEventListeners() {
   jobModal.addEventListener('click', (e) => {
     if (e.target === jobModal) closeModal();
   });
+
+  const e2eForm = document.getElementById('e2eForm');
+  if (e2eForm) {
+    e2eForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('podNameInput');
+      const msg = document.getElementById('e2eSuccessMessage');
+      if (input && msg) {
+        msg.textContent = `Simulated pod ${input.value} submitted successfully`;
+        msg.classList.remove('hidden');
+      }
+    });
+  }
 }
 
 async function loadBranches() {
